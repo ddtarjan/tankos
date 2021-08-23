@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Single player tank</title>
+        <style>
+            img {
+                display: block;
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                background-color: black;
+            }
+        </style>
+    </head>
+    <body>
+        <!---green tank--->
+        <img src="greenTankRight.png" class="tank" id="green" style="height: 10px; width: 20px;">
+        <img src="greenLoaded.png" id="gLoaded" style="width: 10px; height: 10px;">
+        <img src="bullet.png" class="bullet" id="gBullet", style="display:none; top: -20px; left: -20px; width: 3px; height: 3px;">
+        <!---blue tank-->
+        <img src="blueTankRight.png" class="tank" id="blue", style="height: 10px; width: 20px;">
+        <img src="blueLoaded.png" id="bLoaded" style="width: 10px; height: 10px;">
+        <img src="bullet.png" class="bullet" id="bBullet", style="display:none; top: -20px; left: -20px; width: 3px; height: 3px;">
+        <!---red tank-->
+        <img src="redTankRight.png" class="tank" id="red", style="height: 10px; width: 20px;">
+        <img src="redLoaded.png" id="rLoaded" style="width: 10px; height: 10px;">
+        <img src="bullet.png" class="bullet" id="rBullet", style="display:none; top: -20px; left: -20px; width: 3px; height: 3px;">
+        <!---yellow tank-->
+        <img src="yellowTankRight.png" class="tank" id="yellow", style="height: 10px; width: 20px;">
+        <img src="yellowLoaded.png" id="yLoaded" style="width: 10px; height: 10px;">
+        <img src="bullet.png" class="bullet" id="yBullet", style="display:none; top: -20px; left: -20px; width: 3px; height: 3px;">
+        <!--scoring table-->
+        <div id="score" style="position: absolute; left: 310px; top: 50px; text-align: center; color: white; z-index: 10; font-size: small;">Scoring table<br>green: <span id="g">0</span>  blue: <span id="b">0</span>   red: <span id="r">0</span>  purple    : <span id="y">0</span>  </div>
+
+        <script>
+            
+            var tanksAlive = 0;
+            var dist = function(x1, x2, y1, y2){
+                return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+            }
+
+            //obstacles
+            var obstacles = Array(750);
+            for(var i = 0; i < 750; i++){
+                obstacles[i] = Array(350);
+                for(var j = 0; j < 350; j++){
+                    obstacles[i][j] = false;
+                }
+            }
+
+            for(var i = 200; i < 400; i++){
+                for(var j = 150; j < 250; j++){
+                    obstacles[i][j] = true;
+                }
+            }
+            var o = document.createElement("img");
+            o.src = "obstacle.png";
+            o.style = "left: 207px; top: 157px; width: 186px; height: 86px";
+            document.body.appendChild(o);
+
+            for(var i = 300; i < 500; i++){
+                for(var j = 43; j < 143; j++){
+                    obstacles[i][j] = true;
+                }
+            }
+            var o1 = document.createElement("img");
+            o1.src = "obstacle.png";
+            o1.style = "left: 307px; top: 50px; width: 186px; height: 86px";
+            document.body.appendChild(o1);
+
+            //mines
+            for(var i=0;i<5;i++){
+                var left;
+                var gagyi;
+                do{
+                    left = Math.round(700 * Math.random());
+                    gagyi = Math.round(300 * Math.random());
+                }
+                while(obstacles[left][gagyi]);
+                console.log(left, gagyi);
+                var newMine = document.createElement("img");
+                newMine.src = "bullet.png";
+                newMine.style = "display: block; top: " + gagyi + "px; left: " + left + "px; width: 10px; height:10px";
+                newMine.classList.add("bullet");
+                newMine.classList.add("mine");
+                document.body.appendChild(newMine);
+            }
+
+
+            //player object
+            var loaded = [];
+            var alive = [];
+            function player(l, t, angle, c, i, cont,) {
+                tanksAlive++;
+                this.startL = l;
+                this.startT = t;
+                this.startAngle = angle;
+                this.l=l;
+                this.t = t;
+                this.angle = angle;
+                this.speed = 0;
+                this.angleSpeed = 0;
+                this.bt = 0;
+                this.bl = 0;
+                this.color = c;
+                this.images = i;
+                this.dir = 3;
+                this.tank = document.getElementById(this.color);
+                this.loadIndex = loaded.length;
+                loaded.push(true);
+                this.controls = cont;
+                alive.push(true);
+            }
+            player.prototype.shoot = function(b){
+                if(alive){
+                    var newLeft = parseFloat(b.style.left);
+                    var newTop = parseFloat(b.style.top);
+                    newLeft += this.bl;
+                    newTop += this.bt;
+                    b.style.left = newLeft + "px";
+                    b.style.top = newTop + "px";
+                    if(newLeft < 750 - parseFloat(b.style.width) / 2 && newLeft >= 0 && newTop < 350 - parseFloat(b.style.height) / 2 && newTop >= 0 && !obstacles[Math.floor(newLeft)][Math.floor(newTop)]) {
+                        var something = this;
+                        window.requestAnimationFrame(function(){something.shoot(b);});
+                    }
+                    else{
+                        b.style.display = "none";
+                        b.style.left="-1000px";
+                    }
+                }
+                else{
+                    b.style.display = "none";
+                        b.style.left = "-1000px";
+                }
+            };
+            player.prototype.startMoving = function(e) {    
+                if(e.code === this.controls[2]){
+                    this.angleSpeed = Math.PI/100;
+                }
+                if(e.code === this.controls[3]){
+                    this.angleSpeed = -Math.PI/100;
+                }
+                if(e.code === this.controls[1]){
+                    this.speed = -1.5;
+                }
+                if(e.code === this.controls[0]){
+                    this.speed = 1.5;
+                }
+                if(e.code === this.controls[4]){
+                    if(loaded[this.loadIndex]){
+                        var b = document.getElementById(this.color[0]+"Bullet");
+                        b.style.display = "block";
+                        b.style.left = (parseFloat(this.tank.style.left) + parseFloat(this.tank.style.width) / 2 - parseFloat(b.style.width) / 2) + "px";
+                        b.style.top = (parseFloat(this.tank.style.top) + parseFloat(this.tank.style.height) / 2 - parseFloat(b.style.height) / 2) + "px";
+                        this.bl = 5 * Math.cos(this.angle), this.bt = 5 * Math.sin(this.angle);
+                        loaded[this.loadIndex] = false;
+                        this.shoot(b);
+                        var i = this.loadIndex;
+                        var l = document.getElementById(this.color[0] + "Loaded");
+                        l.style.display = "none";
+                        window.setTimeout(function(){ loaded[i] = true; l.style.display = "block";  },3000);
+                    }
+                }
+            };
+            player.prototype.stop = function(e){
+                if(e.code === this.controls[0] || e.code === this.controls[1]){
+                    this.speed = 0;
+                }
+                if(e.code === this.controls[2] || e.code === this.controls[3]){
+                    this.angleSpeed = 0;
+                }
+            };
+            player.prototype.restart = function(){
+                tanksAlive++;
+                this.l = this.startL;
+                this.t = this.startT;
+                this.angle = this.startAngle;
+                this.tank.src = this.images[0];
+                this.tank.style.width = "20px";
+                this.tank.style.height = "10px";
+                loaded[this.loadIndex] = true;   
+                document.getElementById(this.color[0]+"Loaded").style.display = "block";
+                alive[this.loadIndex] = true;
+                console.log("mamlasz");
+            };
+
+            //main functions
+            var players = [
+                new player(50,20,0,"green",["greenTankRight.png","exploison.png"],["KeyW","KeyS","KeyD","KeyA","KeyQ"]),
+                new player(700,300,Math.PI,"blue",["blueTankRight.png","exploison.png"],["Numpad8","Numpad5","Numpad6","Numpad4","ArrowUp"]),
+                new player(700, 70, Math.PI, "red",["redTankRight.png", "exploison.png"], ["KeyI", "KeyK", "KeyL", "KeyJ", "KeyU"]),
+                new player(50, 250, 0, "yellow", ["yellowTankRight.png","exploison.png"],["KeyT", "KeyG", "KeyH", "KeyF", "Space"])
+            ];
+            
+            var move = function(e){
+                for(let i = 0; i < players.length; i++){
+                    if(alive[i])
+                        players[i].startMoving(e);
+                }
+            }
+            var stop = function(e){
+                for(let i = 0; i < players.length;i++){
+                    players[i].stop(e);
+                }
+            }
+
+            document.addEventListener('keydown', e => move(e));
+            document.addEventListener('keyup', e=> stop(e));
+            
+            var update = function(){
+                for(let i = 0;i < players.length; i++){
+                    if(!alive[i])continue;
+                    players[i].angle += players[i].angleSpeed;
+                    players[i].t += players[i].speed*Math.sin(players[i].angle);
+                    players[i].l += players[i].speed*Math.cos(players[i].angle);
+                    players[i].tank.style.transform = "rotate("+players[i].angle+"rad)";
+
+                    var obsX = players[i].l + parseFloat(players[i].tank.style.width) / 2;
+                    var obsY = players[i].t + parseFloat(players[i].tank.style.height) / 2;
+
+                    if(players[i].t < 0) players[i].t = 0;
+                    else if(obsY > 349) players[i].t = 349-players[i].tank.width/2;
+                    else if(players[i].l < 0) players[i].l = 0;
+                    else if(obsX  > 749) players[i].l = 749-players[i].tank.width/2;
+                    else if(obstacles[Math.round(obsX)][Math.round(obsY)]){
+                        players[i].t = parseFloat(players[i].tank.style.top);
+                        players[i].l = parseFloat(players[i].tank.style.left);
+                    }
+
+                    var l = document.getElementById(players[i].color[0]+"Loaded");
+                    l.style.left = players[i].l +"px";
+                    players[i].tank.style.left = players[i].l+"px";
+                    l.style.top = players[i].t - 20 + "px";
+                    players[i].tank.style.top = players[i].t+"px";
+                    
+                    var b = document.getElementsByClassName("bullet");
+                    for(let j = 0; j < b.length; j++){
+                        if(players[i].color[0] == b[j].id[0])continue;
+                        var d = dist(parseFloat(players[i].tank.style.left) + parseFloat(players[i].tank.style.width) / 2,
+                            parseFloat(b[j].style.left) + parseFloat(b[j].style.width) / 2,
+                            parseFloat(players[i].tank.style.top) + parseFloat(players[i].tank.style.height) / 2,
+                            parseFloat(b[j].style.top) + parseFloat(b[j].style.height) / 2);
+                        if(d <= 5 + parseFloat(b[j].style.width) / 2){
+                            players[i].tank.src = players[i].images[1];
+                            var score = document.getElementById(players[i].color[0]);
+                            score.innerText = parseFloat(score.innerText) - 1;
+                            b[i].style.width = b[i].style.height = Math.max(parseFloat(b[i].style.width) / 1.1, 3) + "px"; 
+                            alive[i] = false;
+                            tanksAlive--;
+                            players[i].tank.style.width = "40px";
+                            players[i].tank.style.height = "20px";
+                            if(b[j].classList.contains("mine")){
+                                do{
+                                    var left = Math.round((700 - parseFloat(b[j].style.width) / 2) * Math.random());
+                                    var top = Math.round((300 - parseFloat(b[j].style.height) / 2) * Math.random());
+                                }
+                                while(obstacles[left][top])
+                                b[j].style.left = left + "px";
+                                b[j].style.top = top + "px";
+                                b[j].style.width = b[j].style.height = Math.min(parseFloat(b[j].style.width) * 1.1, 20) + "px"
+                                do{
+                                    var left = Math.round((700 - parseFloat(b[j].style.width) / 2) * Math.random());
+                                    var top = Math.round((300 - parseFloat(b[j].style.height) / 2) * Math.random());
+                                }
+                                while(obstacles[left][top])
+                                var newMine = document.createElement("img");
+                                newMine.src = "bullet.png";
+                                newMine.style = "display: block; top: " + top + "px; left: " + left + "px; width: 10px; height:10px";
+                                newMine.classList.add("bullet");
+                                newMine.classList.add("mine");
+                                document.body.appendChild(newMine);
+                            }
+                            else {
+                                b[j].style.left = "-1000px";
+                                var score = document.getElementById(b[j].id[0]);
+                                score.innerText = parseFloat(score.innerText) + 1;
+                                b[j].style.height = b[j].style.width = Math.min(parseFloat(b[j].style.width) * 1.1, 20) + "px";
+                            }
+                            window.setTimeout(function(){players[i].restart()}, 3000);
+                            break;
+                        }
+                    }
+                }
+                window.requestAnimationFrame(update);
+            } 
+            update();
+            </script>
+    </body>
+</html>

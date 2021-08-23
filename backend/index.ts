@@ -1,4 +1,26 @@
 const uWS = require("uwebsockets.js")
+import { readFile } from 'fs/promises';
+const path = require('path');
+const mime = require('mime-types');
+
+/* Helper function converting Node.js buffer to ArrayBuffer */
+function toArrayBuffer(buffer: any) {
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+}
+
+async function sendFile(filePath: any, res: any) {
+  let data;
+  data = await readFile(filePath).catch(() => {});
+  if (!data) {
+    console.log(`error reading ${filePath}`);
+    return false
+  }
+  const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+  res.writeHeader('Content-Type', mimeType);
+  res.end(toArrayBuffer(data));
+  console.log(`sent ${filePath} mimeType ${mimeType}`)
+  return true;
+};
 
 /* SSL would be SSLApp() */
 uWS.App()
@@ -18,10 +40,24 @@ uWS.App()
     }
     
   }).get('/*', (res: any, req: any) => {
-  
-    /* It does Http as well */
-    res.writeStatus('200 OK').writeHeader('IsExample', 'Yes').end('Hello there!');
-    
+    res.onAborted(() => {
+      if (res.id == -1) {
+        console.log("error: onAborted called twice");
+      } else {
+        console.log('request aborted');
+        console.timeEnd(res.id);
+      }
+      res.id = -1;
+    });
+    const url = req.getUrl();
+    const filePath = path.join(__dirname, '../static', url == "/" ? "/index.html" : url);
+    sendFile(filePath, res).then(sent => {
+      if (sent)
+        return;
+      console.log(`url not found: ${url}`)
+      res.writeStatus('404');
+      res.end();
+    });
   }).listen(9001, (listenSocket: any) => {
   
     if (listenSocket) {
