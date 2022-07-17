@@ -10,13 +10,14 @@
   "author": "Dénes Tarján",
   "license": "MIT",
   "dependencies": {
+    "@types/uws": "^0.13.3",
     "fs": "0.0.1-security",
     "mime-types": "^2.1.32",
     "path": "^0.12.7",
     "url": "^0.11.0",
-    "uwebsockets.js": "^19.0.0-docs"
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.3.0"
   },
   "devDependencies": {
-    "@types/node": "^16.7.1"
+    "@types/node": "^16.11.26"
   }
 }
